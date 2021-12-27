@@ -3,12 +3,11 @@
  * Licensed under the MIT License. See License.txt in the project root for license information.
  * ------------------------------------------------------------------------------------------ */
 
-'use strict';
-import * as vscode from 'vscode';
 import * as fs from 'fs';
-import * as path from 'path';
 import * as mkdirp from 'mkdirp';
+import * as path from 'path';
 import * as rimraf from 'rimraf';
+import * as vscode from 'vscode';
 
 export function activate(context: vscode.ExtensionContext) {
     vscode.workspace.registerFileSystemProvider('datei', new DateiFileSystemProvider(), {
@@ -131,8 +130,6 @@ class DateiFileSystemProvider implements vscode.FileSystemProvider {
     // TODO can implement a fast copy() method with node.js 8.x new fs.copy method
 }
 
-export function deactivate() { }
-
 //#region Utilities
 
 export interface IStatAndLink {
@@ -142,15 +139,15 @@ export interface IStatAndLink {
 
 namespace _ {
 
-    function handleResult<T>(resolve: (result: T) => void, reject: (error: Error) => void, error: Error | null | undefined, result: T): void {
+    function handleResult<T>(resolve: (result: T) => void, reject: (error: Error) => void, error: Error | null | undefined, result: T | undefined): void {
         if (error) {
-            reject(massageError(error));
+            reject(messageError(error));
         } else {
-            resolve(result);
+            resolve(result!);
         }
     }
 
-    function massageError(error: Error & { code?: string }): Error {
+    function messageError(error: Error & { code?: string }): Error {
         if (error.code === 'ENOENT') {
             return vscode.FileSystemError.FileNotFound();
         }
@@ -239,7 +236,7 @@ namespace _ {
     }
 
     export function statLink(path: string): Promise<IStatAndLink> {
-        return new Promise((resolve, reject) => {
+        return new Promise<IStatAndLink>((resolve, reject) => {
             fs.lstat(path, (error, lstat) => {
                 if (error || lstat.isSymbolicLink()) {
                     fs.stat(path, (error, stat) => {
